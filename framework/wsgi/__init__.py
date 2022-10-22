@@ -1,0 +1,1 @@
+from wsgi.app import BaseApplication
