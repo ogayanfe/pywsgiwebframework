@@ -1,12 +1,11 @@
-from typing import Callable
-from framework.request import Request
-from .base import BaseWsgiApplication
+from typing import Any, Callable
+from framework.wsgi.base import BaseApplication
 
 
-class Application(BaseWsgiApplication):
+class Application(BaseApplication):
+    def __call__(self, environ: dict[str, str], start_response: Callable[[str, Any], Callable]):
+        status = "200 ok"
+        headers = [("content-type", "text/html")]
+        start_response(status, headers)
 
-    def __call__(self, environ: dict, start_response: Callable) -> iter:
-        request = Request(environ)
-        start_response("200 ok", [("Content-Type", "text/html")])
-
-        return [b"Hello World"]
+        return [b'<h1>It Works</h1>']
