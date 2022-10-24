@@ -4,8 +4,7 @@ from framework.wsgi.base import BaseApplication
 
 class Application(BaseApplication):
     def __call__(self, environ: dict[str, str], start_response: Callable[[str, Any], Callable]):
-        status = "200 ok"
-        headers = [("content-type", "text/html")]
-        start_response(status, headers)
-
-        return [b'<h1>It Works</h1>']
+        url = environ['PATH_INFO']
+        view = self._get_route(url)
+        response = view(environ, start_response)
+        return response
