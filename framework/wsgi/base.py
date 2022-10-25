@@ -1,5 +1,4 @@
-from email.mime import application
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Union
 from framework.defaults import default_404_view
 from framework.request import Request
 from framework.response import Response
@@ -58,13 +57,30 @@ class BaseApplication:
         return decorator
 
     def map_route(self, url: str, view: Callable):
-        print(convert_url_to_regex(url))
         self._url_to_view[convert_url_to_regex(url)] = view
+
+    def _process_match(self, matches: dict[str, str]) -> dict[str, Union[str, int, float]]:
+        """
+        Converts the matches found by the regexp to the corresponding types
+        denoted by the regexp
+        """
+        output: dict[str, Union[str, int, float]] = {}
+        for key, value in matches.items():
+            if key.startswith("int_"):
+                output[key.replace("int_", "")] = int(value)
+                continue
+            if key.startswith("str_"):
+                output[key.replace("str_", "")] = str(value)
+                continue
+            if key.startswith("float_"):
+                output[key.replace("float_", "")] = float(value)
+                continue
+        return output
 
     def _get_route(self, url: str) -> Callable[[dict[str, str], StartResponseType], Callable]:
         for key, view in self._url_to_view.items():
             match = re.match(key, url)
             if match:
-                kwargs = match.groupdict()
+                kwargs = self._process_match(match.groupdict())
                 return self._make_application(view, **kwargs)
         return self._page_not_found_view
