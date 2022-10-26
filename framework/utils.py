@@ -1,4 +1,7 @@
+from genericpath import isdir
 import re
+import os
+from typing import Optional
 
 
 def convert_url_to_regex(url: str):
@@ -27,7 +30,15 @@ def convert_url_to_regex(url: str):
     return f'^{regexpattern}$'
 
 
-if __name__ == "__name__":
-    x = convert_url_to_regex("ayanfe/<float:name>/boy/")
-    print(x)
-    print(re.search(x, "ayanfe/4.3/boy/"))
+def get_directory_file_paths(parent_path: str, output: Optional[list] = []) -> list:
+    """
+        Returns the path of all file in a parent directory
+    """
+    if not os.path.exists(parent_path):
+        return output
+    for path in os.listdir(parent_path):
+        child_path = os.path.join(parent_path, path)
+        if os.path.isdir(child_path):
+            return get_directory_file_paths(child_path, output)
+        output.append(child_path)
+    return output

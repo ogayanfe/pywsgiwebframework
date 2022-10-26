@@ -3,15 +3,20 @@ from framework.defaults import default_404_view
 from framework.request import Request
 from framework.response import Response, ResponseBaseClass
 from framework.common_types import StartResponseType
-from framework.utils import convert_url_to_regex
+from framework.utils import convert_url_to_regex, get_directory_file_paths
 import re
+import os
 
 
 class BaseApplication:
     def __init__(self, file_path: str) -> None:
-        self._file_path = file_path
+        self._project_directory = os.path.dirname(file_path)
         self._url_to_view: dict[str, Callable] = {}
         self._page_not_found_view = self._make_application(default_404_view)
+
+        self._static_dir_files: list[str] = get_directory_file_paths(
+            os.path.join(self._project_directory, "static")
+        )
 
     def _validate_response(response: Response) -> None:
         pass
@@ -29,7 +34,7 @@ class BaseApplication:
                     f"You view should return and instance of the Response class not {type(response)}"
                 )
             start_response(response.status, response.get_headers())
-            return response(self._file_path)
+            return response(self._project_directory)
         return application
 
     def route(self, url: str):
@@ -57,7 +62,10 @@ class BaseApplication:
             return view_func
         return decorator
 
-    def map_route(self, url: str, view: Callable):
+    def map_route(self, url: str, view: Callable) -> None:
+        """
+        Maps a url pattern to a wsgi to a view
+        """
         self._url_to_view[convert_url_to_regex(url)] = view
 
     def _process_match(self, matches: dict[str, str]) -> dict[str, Union[str, int, float]]:
@@ -79,9 +87,18 @@ class BaseApplication:
         return output
 
     def _get_route(self, url: str) -> Callable[[dict[str, str], StartResponseType], Callable]:
-        for key, view in self._url_to_view.items():
+        """
+        Takes in the a resource url and return the application to be called, if any
+        """
+        for key, view in self._url_to_view.items():  # Check the application routes
             match = re.match(key, url)
             if match:
                 kwargs = self._process_match(match.groupdict())
                 return self._make_application(view, **kwargs)
+        for file_path in self._static_dir_files:  # Check static files
+            stripped_path = file_path.replace(self._project_directory, "")
+            bash_path = stripped_path.replace("\\", '/')
+            if bash_path == url:
+                print(bash_path)
+
         return self._page_not_found_view

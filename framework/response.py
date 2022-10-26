@@ -70,19 +70,17 @@ class TemplateResponse(ResponseBaseClass):
         self._context: dict[str, Any] = {}
         self._headers = headers
         self._status_text: str = status_text if status_text else responses.get(
-            status_code, "")
+            status_code, ""
+        )
 
-    def __call__(self, app_path):
+    def __call__(self, project_path):
         """
-
+        Read the templates and return an iterable response body, 
+        in this case myself
         """
-        template_dir = self._get_template_dir(app_path)
-        self._data = self._load_template(template_dir)
+        template_dir: str = os.path.join(project_path, "templates")
+        self._data: list[bytes] = self._load_template(template_dir)
         return self
-
-    def _get_template_dir(self, application_path: str) -> str:
-        parent = os.path.dirname(application_path)
-        return os.path.join(parent, 'templates')
 
     def __iter__(self) -> Iterable:
         return iter(self._data)
