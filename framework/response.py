@@ -1,11 +1,11 @@
-from multiprocessing import context
 import os
-from typing import Any, Iterable, Iterator, Union, Optional
+from typing import Any, Iterable, Iterator, Union, Optional, IO
 from http.client import responses
 from jinja2 import Environment, FileSystemLoader
+import mimetypes
 
 
-class ResponseBaseClass:
+class BaseResponse:
     _headers: dict
     _status_code: int
     _status_text: str
@@ -25,7 +25,7 @@ class ResponseBaseClass:
         return f'{self._status_code} {self._status_text}'
 
 
-class Response(ResponseBaseClass):
+class Response(BaseResponse):
     def __init__(self, data: Union[str, bytes, tuple, list] = [], status_code: Optional[int] = 200, status_text: Optional[str] = None, headers: dict[str, str] = {}) -> None:
         self._data: list[bytes] = self._parse_data(data)
         self._status_code: int = status_code
@@ -61,11 +61,11 @@ class Response(ResponseBaseClass):
         return bytes_data
 
 
-class TemplateResponse(ResponseBaseClass):
+class TemplateResponse(BaseResponse):
 
     def __init__(self, name: str, status_code: Optional[int] = 200, status_text: Optional[str] = None,  context: Optional[dict[str, Any]] = {}, headers: dict[str, str] = {}) -> None:
         self.name = name
-        self._status_code = str
+        self._status_code: int = status_code
         self._data: list = []
         self._context: dict[str, Any] = {}
         self._headers = headers
@@ -73,7 +73,7 @@ class TemplateResponse(ResponseBaseClass):
             status_code, ""
         )
 
-    def __call__(self, project_path):
+    def __call__(self, project_path, *_, **kwargs):
         """
         Read the templates and return an iterable response body, 
         in this case myself
@@ -89,3 +89,34 @@ class TemplateResponse(ResponseBaseClass):
         environ = Environment(loader=FileSystemLoader(template_dir))
         template = environ.get_template(self.name)
         return [template.render(**self._context).encode("utf-8")]
+
+
+class StaticResponse(BaseResponse):
+
+    def __init__(self, file_path: str, status_code: int = 200, status_text: Optional[str] = None, headers: dict[str, str] = {}):
+        self._file_path: str = file_path
+        self._status_code: int = status_code
+        self._status_text: str = status_text if status_text else responses.get(
+            status_code, "")
+        self._headers: dict[str, str] = headers
+        self.file_object: IO = open(file_path, 'rb')
+
+    def close(self):
+        self.file_object.close()
+
+    def __iter__(self):
+        return self.file_wrapper(self.file_object)
+
+    def __call__(self, _, environ: dict[str, str]) -> Iterator:
+        setattr(self, "file_wrapper", environ.get("wsgi.file_wrapper"))
+        return self
+
+    def get_headers(self) -> Iterable[tuple[str, str]]:
+        mtype, encoding = mimetypes.guess_type(self._file_path)
+        output = {
+            "content-type": mtype,
+            "content-encoding": encoding if encoding else "",
+        }
+        for key, value in self._headers.items():
+            output[key.lower()] = value
+        return output.items()

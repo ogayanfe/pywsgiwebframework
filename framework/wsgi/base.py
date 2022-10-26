@@ -1,7 +1,7 @@
 from typing import Callable, Iterable, Union
 from framework.defaults import default_404_view
 from framework.request import Request
-from framework.response import Response, ResponseBaseClass
+from framework.response import Response, BaseResponse, StaticResponse
 from framework.common_types import StartResponseType
 from framework.utils import convert_url_to_regex, get_directory_file_paths
 import re
@@ -12,7 +12,7 @@ class BaseApplication:
     def __init__(self, file_path: str) -> None:
         self._project_directory = os.path.dirname(file_path)
         self._url_to_view: dict[str, Callable] = {}
-        self._page_not_found_view = self._make_application(default_404_view)
+        self._page_not_found_view = default_404_view
 
         self._static_dir_files: list[str] = get_directory_file_paths(
             os.path.join(self._project_directory, "static")
@@ -21,7 +21,7 @@ class BaseApplication:
     def _validate_response(response: Response) -> None:
         pass
 
-    def _make_application(self, view_func: Callable[[Request], Response], **kwargs):
+    def _make_application(self, view_func: Callable[[Request], Response], **kwargs,):
         """
         Takes a view function and returns a WSGI application, should not be called directly
         """
@@ -29,12 +29,12 @@ class BaseApplication:
         def application(environ: dict, start_response: StartResponseType) -> Iterable:
             request = Request(environ)
             response = view_func(request, **kwargs)
-            if not isinstance(response, ResponseBaseClass):
+            if not isinstance(response, BaseResponse):
                 raise TypeError(
                     f"You view should return and instance of the Response class not {type(response)}"
                 )
             start_response(response.status, response.get_headers())
-            return response(self._project_directory)
+            return response(self._project_directory, environ)
         return application
 
     def route(self, url: str):
@@ -88,17 +88,23 @@ class BaseApplication:
 
     def _get_route(self, url: str) -> Callable[[dict[str, str], StartResponseType], Callable]:
         """
-        Takes in the a resource url and return the application to be called, if any
+        Takes in the a resource url and return the application to be called, if any.
+        First checks the user defined routes, then check the files in the static directory else
+        routes the request to the 404 view
         """
         for key, view in self._url_to_view.items():  # Check the application routes
             match = re.match(key, url)
             if match:
                 kwargs = self._process_match(match.groupdict())
                 return self._make_application(view, **kwargs)
+
         for file_path in self._static_dir_files:  # Check static files
             stripped_path = file_path.replace(self._project_directory, "")
             bash_path = stripped_path.replace("\\", '/')
-            if bash_path == url:
-                print(bash_path)
 
-        return self._page_not_found_view
+            if bash_path == url:
+                def _(*__, **___):
+                    return StaticResponse(file_path)
+                return self._make_application(_)
+
+        return self._make_application(self._page_not_found_view)
