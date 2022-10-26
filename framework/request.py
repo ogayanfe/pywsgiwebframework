@@ -1,14 +1,14 @@
-from typing import IO, Any, Iterable, Union
+from typing import Any, BinaryIO
 from urllib.parse import unquote
 
 
 class WsgiStore:
-    wsgi_input: IO
-    wsgi_error: IO
+    wsgi_input: BinaryIO
+    wsgi_error: BinaryIO
 
 
 class Request:
-    wsgi_store = WsgiStore()
+    _wsgi_store = WsgiStore()
     REQUEST_URL: str
     QUERY_STRING: str
 
@@ -19,9 +19,8 @@ class Request:
                 continue
 
             if key.startswith("wsgi."):
-                setattr(self.wsgi_store, key.replace("wsgi.", "wsgi_"), value)
+                setattr(self._wsgi_store, key.replace("wsgi.", "wsgi_"), value)
                 continue
-
             setattr(self, key, value)
 
     def _parse_query_string(self, qs: str) -> dict[str, str]:
@@ -35,6 +34,6 @@ class Request:
         return output
 
     @property
-    def GET(self) -> dict[str, Union[str, Iterable]]:
+    def GET(self) -> dict[str, str]:
         query_string = self.QUERY_STRING
         return self._parse_query_string(query_string)

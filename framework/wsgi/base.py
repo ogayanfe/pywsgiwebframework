@@ -1,14 +1,15 @@
 from typing import Callable, Iterable, Union
 from framework.defaults import default_404_view
 from framework.request import Request
-from framework.response import Response
+from framework.response import Response, ResponseBaseClass
 from framework.common_types import StartResponseType
 from framework.utils import convert_url_to_regex
 import re
 
 
 class BaseApplication:
-    def __init__(self):
+    def __init__(self, file_path: str) -> None:
+        self._file_path = file_path
         self._url_to_view: dict[str, Callable] = {}
         self._page_not_found_view = self._make_application(default_404_view)
 
@@ -23,12 +24,12 @@ class BaseApplication:
         def application(environ: dict, start_response: StartResponseType) -> Iterable:
             request = Request(environ)
             response = view_func(request, **kwargs)
-            if not isinstance(response, Response):
+            if not isinstance(response, ResponseBaseClass):
                 raise TypeError(
                     f"You view should return and instance of the Response class not {type(response)}"
                 )
             start_response(response.status, response.get_headers())
-            return response
+            return response(self._file_path)
         return application
 
     def route(self, url: str):
