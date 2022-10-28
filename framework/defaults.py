@@ -1,8 +1,7 @@
-
 from framework.response import Response
 
 
-def default_404_view(request):
+def default_404_view(request) -> Response:
     """
     View to be called when a user does not define 404 view.
     """

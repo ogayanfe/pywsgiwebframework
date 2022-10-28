@@ -1,8 +1,9 @@
 waitress==2.1.2  # Wsgi Server
-hupper==1.10.3  # For Enabling live reloading with waitress
+hupper==1.10.3  # For enabling live reloading with waitress 
+Jinja2==3.1.2   # Templating Engine
+MarkupSafe==2.1.1  # Installed by jinja
 
-
-# Not required to run application
+# Vscode Recommendation
 autopep8==1.7.0
 pycodestyle==2.9.1
 toml==0.10.2
