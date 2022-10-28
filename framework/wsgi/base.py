@@ -20,10 +20,10 @@ class BaseApplication:
             os.path.join(self._project_directory, "static")
         )
 
-    def _validate_response(response: Response) -> None:
+    def _validate_response(response: BaseResponse) -> None:
         pass
 
-    def _make_application(self, view_func: Callable[[Request], Response], **kwargs,):
+    def _make_application(self, view_func: Callable[[Request], BaseResponse], **kwargs,):
         """
         Takes a view function and returns a WSGI application, should not be called directly
         """
@@ -50,7 +50,7 @@ class BaseApplication:
         If a user goes to a non existent page page_404 will be called.
         """
 
-        def decorator(view_func: Callable[[Request], Response]) -> Callable:
+        def decorator(view_func: Callable[[Request], BaseResponse]) -> Callable:
             self._page_not_found_view = view_func
             return view_func
         return decorator
@@ -63,7 +63,7 @@ class BaseApplication:
             methods = ["get", "post", "put", "patch", "delete"]
         check_http_methods(methods)
 
-        def decorator(view_func: Callable[[Request], Response]) -> Callable:
+        def decorator(view_func: Callable[[Request], BaseResponse]) -> Callable:
             self._map_route(url, view_func, methods)
             return view_func
         return decorator
@@ -135,10 +135,11 @@ class BaseApplication:
         First checks the user defined routes, then check the files in the static directory else
         routes the request to the 404 view
         """
-        global_application = self._get_method_views(url, "global")
+        global_application = self._get_application_from_method(url, "global")
         if global_application:
             return global_application
-        method_application = self._get_method_views(url, method.lower())
+        method_application = self._get_application_from_method(
+            url, method.lower())
         if method_application:
             return method_application
 

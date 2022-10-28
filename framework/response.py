@@ -3,9 +3,10 @@ from typing import Any, Iterable, Iterator, Union, Optional, IO
 from http.client import responses
 from jinja2 import Environment, FileSystemLoader
 import mimetypes
+from abc import ABC
 
 
-class BaseResponse:
+class BaseResponse(ABC):
     _headers: dict
     _status_code: int
     _status_text: str
@@ -67,7 +68,7 @@ class TemplateResponse(BaseResponse):
         self.name = name
         self._status_code: int = status_code
         self._data: list = []
-        self._context: dict[str, Any] = {}
+        self._context: dict[str, Any] = context
         self._headers = headers
         self._status_text: str = status_text if status_text else responses.get(
             status_code, ""
