@@ -115,7 +115,7 @@ class BaseApplication:
                 return self._make_application(_)
         return None
 
-    def _get_application_from_method(self, url: str, method: str):
+    def _get_application_from_url_method(self, url: str, method: str):
         """
         Checks the method and returns the application involved with the 
         url else returns None
@@ -135,11 +135,15 @@ class BaseApplication:
         First checks the user defined routes, then check the files in the static directory else
         routes the request to the 404 view
         """
-        global_application = self._get_application_from_method(url, "global")
+
+        global_application = self._get_application_from_url_method(
+            url, "global"
+        )
         if global_application:
             return global_application
-        method_application = self._get_application_from_method(
-            url, method.lower())
+        method_application = self._get_application_from_url_method(
+            url, method.lower()
+        )
         if method_application:
             return method_application
 

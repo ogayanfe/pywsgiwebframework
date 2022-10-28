@@ -14,14 +14,12 @@ class Request:
 
     def __init__(self, environ: dict[str, Any]):
         for key, value in environ.items():
-            if not key.startswith("HTTP_"):
+            if key.startswith("HTTP_"):
                 setattr(self, key.replace("HTTP_", ""), value)
-                continue
-
-            if key.startswith("wsgi."):
+            elif key.startswith("wsgi."):
                 setattr(self._wsgi_store, key.replace("wsgi.", "wsgi_"), value)
-                continue
-            setattr(self, key, value)
+            else:
+                setattr(self, key, value)
 
     def _parse_query_string(self, qs: str) -> dict[str, str]:
         if qs == "":
@@ -35,5 +33,8 @@ class Request:
 
     @property
     def GET(self) -> dict[str, str]:
+        """
+        Returns a dictionary of key, value pairs of the request url query parameters,
+        """
         query_string = self.QUERY_STRING
         return self._parse_query_string(query_string)
