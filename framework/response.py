@@ -76,7 +76,7 @@ class TemplateResponse(BaseResponse):
 
     def __call__(self, project_path, *_, **kwargs):
         """
-        Read the templates and return an iterable response body, 
+        Read the templates and return an iterable response body,
         in this case myself
         """
         template_dir: str = os.path.join(project_path, "templates")

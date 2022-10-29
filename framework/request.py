@@ -1,10 +1,16 @@
 from typing import Any, BinaryIO
 from urllib.parse import unquote
+import cgi
 
 
 class WsgiStore:
     wsgi_input: BinaryIO
     wsgi_error: BinaryIO
+    environ: dict[str, str]
+
+    def get_input(self):
+        x = cgi.FieldStorage(fp=self.wsgi_input, environ=self.environ)
+        return dict(x)
 
 
 class Request:
@@ -18,8 +24,11 @@ class Request:
                 setattr(self, key.replace("HTTP_", ""), value)
             elif key.startswith("wsgi."):
                 setattr(self._wsgi_store, key.replace("wsgi.", "wsgi_"), value)
+            if key == 'REQEUST_METHOD':
+                setattr(self, 'METHOD', value)
             else:
                 setattr(self, key, value)
+        setattr(self._wsgi_store, 'environ', environ)
 
     def _parse_query_string(self, qs: str) -> dict[str, str]:
         if qs == "":
@@ -38,3 +47,7 @@ class Request:
         """
         query_string = self.QUERY_STRING
         return self._parse_query_string(query_string)
+
+    @property
+    def POST(self):
+        return self._wsgi_store.get_input()

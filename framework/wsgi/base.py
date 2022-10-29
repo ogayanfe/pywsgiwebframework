@@ -1,8 +1,7 @@
-from email.mime import application
 from typing import Callable, Iterable, List, Tuple, Union, Optional
 from framework.defaults import default_404_view
 from framework.request import Request
-from framework.response import Response, BaseResponse, StaticResponse
+from framework.response import BaseResponse, StaticResponse
 from framework.common_types import StartResponseType
 from framework.utils import check_http_methods, convert_url_to_regex, get_directory_file_paths
 import re
@@ -73,7 +72,7 @@ class BaseApplication:
         Maps a url pattern to a wsgi to a view
         """
         url_regex = convert_url_to_regex(url)
-        if len(methods) == 5:
+        if len(methods) == 5:  # responds to all http methods
             self._url_to_view["global"].append((url_regex, view))
             return
         for method in methods:
