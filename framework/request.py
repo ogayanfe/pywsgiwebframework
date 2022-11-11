@@ -24,7 +24,7 @@ class Request:
                 setattr(self, key.replace("HTTP_", ""), value)
             elif key.startswith("wsgi."):
                 setattr(self._wsgi_store, key.replace("wsgi.", "wsgi_"), value)
-            if key == 'REQEUST_METHOD':
+            if key == 'REQUEST_METHOD':
                 setattr(self, 'METHOD', value)
             else:
                 setattr(self, key, value)

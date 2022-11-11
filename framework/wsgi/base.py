@@ -9,6 +9,8 @@ import os
 
 
 class BaseApplication:
+    environ: dict[str, str]
+
     def __init__(self, file_path: str) -> None:
         self._project_directory = os.path.dirname(file_path)
         self._url_to_view: dict[str, List[Tuple(str, Callable)]] = {
